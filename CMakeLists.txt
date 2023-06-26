@@ -20,5 +20,3 @@ add_executable(mqtt_publisher mqtt_publisher.cpp ${mqtt_headers})
 
 target_link_libraries(mqtt_subscriber PahoMqttCpp::paho-mqttpp3 ${Boost_LIBRARIES})
 target_link_libraries(mqtt_publisher PahoMqttCpp::paho-mqttpp3 ${Boost_LIBRARIES})
-
-target_compile_options(mqtt_subscriber PRIVATE -fPIE -no-pie)
