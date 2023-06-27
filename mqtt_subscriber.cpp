@@ -167,7 +167,6 @@ class callback : public virtual mqtt::callback,
 
 		if (pos; pos != std::end(client_storage)) {
 			pos->messages_num++;
-			cs->messages_num = pos->messages_num;
 		}
 		else {
 			this->client_storage.push_back(*cs);
