@@ -147,25 +147,31 @@ class callback : public virtual mqtt::callback,
 
 	// Callback for when a message arrives.
 	void message_arrived(mqtt::const_message_ptr msg) override {
+
+		client_statistics* cs = new client_statistics;
+		std::string topic = msg->get_topic();
+
+		cs->client_name = topic.substr(topic.find("/") + 1, topic.rfind("/") - topic.find("/") - 1);
+
 		std::cout << "Message arrived" << std::endl;
 		std::cout << "\ttopic: '" << msg->get_topic() << "'" << std::endl;
 		std::cout << "\tpayload: '" << msg->to_string() << "'\n" << std::endl;
-		
-		client_statistics* cs;
-		cs->client_name = msg->get_topic();
 
-		//std::cout << "Last client: " << client_storage.back().client_name << std::endl;
 		auto IsClientSame = [&cs](const client_statistics &i) {
 			return (cs->client_name == i.client_name);
 		};
 
-		if (auto pos = std::find_if(client_storage.cbegin(), client_storage.cend(), IsClientSame);
-			pos != std::end(client_storage)) {
-				pos->messages_num++;
+		auto pos = std::find_if(client_storage.begin(), client_storage.end(), IsClientSame);
+
+		if (pos; pos != std::end(client_storage)) {
+			pos->messages_num++;
+			cs->messages_num = pos->messages_num;
 		}
 		else {
 			this->client_storage.push_back(*cs);
 		}
+		std::cout << "Last client: " << cs->client_name << " messages: " << cs->messages_num << std::endl;
+		delete cs;
 	}
 
 	void delivery_complete(mqtt::delivery_token_ptr token) override {}
