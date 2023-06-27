@@ -33,11 +33,9 @@ const std::string TOPIC("data/+/time");
 const int	QOS = 1;
 const int	N_RETRY_ATTEMPTS = 5;
 
-const int CLIENT_NAME_MAXLENGTH = 256;
-
 struct  client_statistics {
-	mqtt::string client_name = mqtt::string(CLIENT_NAME_MAXLENGTH, '0');
-	int client_messages_num = 0;
+	mqtt::string client_name;
+	int messages_num = 0;
 };
 
 /////////////////////////////////////////////////////////////////////////////
@@ -91,9 +89,9 @@ class callback : public virtual mqtt::callback,
 	mqtt::connect_options& connOpts_;
 	// An action listener to display the result of actions.
 	action_listener subListener_;
-    
+
 	// Storage for the clients' message statistics
-	static std::vector<client_statistics> client_storage;
+	std::vector<client_statistics> client_storage;
 
 	// This deomonstrates manually reconnecting to the broker by calling
 	// connect() again. This is a possibility for an application that keeps
@@ -152,10 +150,22 @@ class callback : public virtual mqtt::callback,
 		std::cout << "Message arrived" << std::endl;
 		std::cout << "\ttopic: '" << msg->get_topic() << "'" << std::endl;
 		std::cout << "\tpayload: '" << msg->to_string() << "'\n" << std::endl;
-		client_statistics cs;
-		cs.client_name = msg->get_topic();
-		cs.client_messages_num = 0;
-		client_storage.push_back(cs);
+		
+		client_statistics* cs;
+		cs->client_name = msg->get_topic();
+
+		//std::cout << "Last client: " << client_storage.back().client_name << std::endl;
+		auto IsClientSame = [&cs](const client_statistics &i) {
+			return (cs->client_name == i.client_name);
+		};
+
+		if (auto pos = std::find_if(client_storage.cbegin(), client_storage.cend(), IsClientSame);
+			pos != std::end(client_storage)) {
+				pos->messages_num++;
+		}
+		else {
+			this->client_storage.push_back(*cs);
+		}
 	}
 
 	void delivery_complete(mqtt::delivery_token_ptr token) override {}
