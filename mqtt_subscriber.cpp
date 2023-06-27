@@ -24,6 +24,7 @@
 #include <thread>
 #include <vector>
 #include <memory>
+#include <iomanip>
 #include "mqtt/async_client.h"
 
 const std::string SERVER_ADDRESS("tcp://localhost:1883");
@@ -93,6 +94,9 @@ class callback : public virtual mqtt::callback,
 	// Storage for the clients' message statistics
 	std::vector<client_statistics> client_storage;
 
+	//Table data which will be refreshed
+	int lines_printed = 0;
+
 	// This deomonstrates manually reconnecting to the broker by calling
 	// connect() again. This is a possibility for an application that keeps
 	// a copy of it's original connect_options, or if the app wants to
@@ -153,9 +157,7 @@ class callback : public virtual mqtt::callback,
 
 		cs->client_name = topic.substr(topic.find("/") + 1, topic.rfind("/") - topic.find("/") - 1);
 
-		std::cout << "Message arrived" << std::endl;
-		std::cout << "\ttopic: '" << msg->get_topic() << "'" << std::endl;
-		std::cout << "\tpayload: '" << msg->to_string() << "'\n" << std::endl;
+		output_redraw();
 
 		auto IsClientSame = [&cs](const client_statistics &i) {
 			return (cs->client_name == i.client_name);
@@ -170,8 +172,41 @@ class callback : public virtual mqtt::callback,
 		else {
 			this->client_storage.push_back(*cs);
 		}
-		std::cout << "Last client: " << cs->client_name << " messages: " << cs->messages_num << std::endl;
+
 		delete cs;
+	}
+
+	void output_redraw() {
+
+		const char sep          = ' ';
+		const int nameWidth     = 20;
+		const int numWidth      = 22;
+
+		for (int i = 0; i < lines_printed; i++) {
+			std::cout << "\033[1A\033[K";
+		}
+
+		std::cout << "╔" << std::setw(nameWidth + 3) << std::setfill('=') << "╦" <<
+		                    std::setw(numWidth + 3) << std::setfill('=') << "╗" << std::endl;
+		std::cout << "╠" << std::setw(nameWidth + 3) << std::setfill('=') << "╬" <<
+		                    std::setw(numWidth + 3) << std::setfill('=') << "╣" << std::endl;					
+		std::cout << "║" << std::setw(nameWidth) << std::setfill(sep) << "Client name    ";
+		std::cout << "║" << std::setw(numWidth) << std::setfill(sep) << "Messages      " << "║" << std::endl;
+		std::cout << "╠" << std::setw(nameWidth + 3) << std::setfill('=') << "╬" <<
+		                    std::setw(numWidth + 3) << std::setfill('=') << "╣" << std::endl;
+		lines_printed = 4;
+
+		for (auto & element : client_storage) {
+			std::cout << "║"  << std::setw(nameWidth) << std::setfill(sep)  << element.client_name << "║";
+			std::cout << std::setw(numWidth) << std::setfill(sep) << element.messages_num << "║" << std::endl;
+			std::cout << "╠" << std::setw(nameWidth + 3) << std::setfill('=') << "╬" <<
+		                    std::setw(numWidth + 3) << std::setfill('=') << "╣" << std::endl;
+			lines_printed = lines_printed + 2;
+		}
+
+		std::cout << "╚" << std::setw(nameWidth + 3) << std::setfill('=') << "╩" <<
+		                    std::setw(numWidth + 3) << std::setfill('=') << "╝" << std::endl;
+		lines_printed++;
 	}
 
 	void delivery_complete(mqtt::delivery_token_ptr token) override {}
