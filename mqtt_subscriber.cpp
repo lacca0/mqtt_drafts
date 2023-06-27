@@ -152,15 +152,15 @@ class callback : public virtual mqtt::callback,
 	// Callback for when a message arrives.
 	void message_arrived(mqtt::const_message_ptr msg) override {
 
-		client_statistics* cs = new client_statistics;
+		client_statistics cs;
 		std::string topic = msg->get_topic();
 
-		cs->client_name = topic.substr(topic.find("/") + 1, topic.rfind("/") - topic.find("/") - 1);
+		cs.client_name = topic.substr(topic.find("/") + 1, topic.rfind("/") - topic.find("/") - 1);
 
 		output_redraw();
 
-		auto IsClientSame = [&cs](const client_statistics &i) {
-			return (cs->client_name == i.client_name);
+		auto IsClientSame = [cs](const client_statistics &i) {
+			return (cs.client_name == i.client_name);
 		};
 
 		auto pos = std::find_if(client_storage.begin(), client_storage.end(), IsClientSame);
@@ -168,11 +168,10 @@ class callback : public virtual mqtt::callback,
 		if (pos; pos != std::end(client_storage)) {
 			pos->messages_num++;
 		}
-		else {
-			this->client_storage.push_back(*cs);
-		}
 
-		delete cs;
+		else {
+			this->client_storage.push_back(cs);
+		}
 	}
 
 	void output_redraw() {

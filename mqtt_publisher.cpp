@@ -138,11 +138,12 @@ int main(int argc, char* argv[])
 
 			t = timestamp();
 			//cout << t << endl;
-			if (abs(int(t - tlast)) >= DELTA_MS)
+			if (abs(int(t - tlast)) >= DELTA_MS) {
 				top.publish(to_string(tlast = t));
-
-			if (trun > 0 && t >= (trun + tstart))
+			}
+			if (trun > 0 && t >= (trun + tstart)) {
 				break;
+			}
 		}
 
 		// Disconnect
