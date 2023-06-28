@@ -34,11 +34,6 @@ const std::string TOPIC("data/+/time");
 const int	QOS = 1;
 const int	N_RETRY_ATTEMPTS = 5;
 
-struct  client_statistics {
-	mqtt::string client_name;
-	int messages_num = 0;
-};
-
 /////////////////////////////////////////////////////////////////////////////
 
 // Callbacks for the success or failures of requested actions.
@@ -92,8 +87,8 @@ class callback : public virtual mqtt::callback,
 	action_listener subListener_;
 
 	// Storage for the clients' message statistics
-	std::vector<client_statistics> client_storage;
-
+	std::unordered_map<std::string, int> client_storage;
+	
 	//Table data which will be refreshed
 	int lines_printed = 0;
 
@@ -152,25 +147,17 @@ class callback : public virtual mqtt::callback,
 	// Callback for when a message arrives.
 	void message_arrived(mqtt::const_message_ptr msg) override {
 
-		client_statistics cs;
 		std::string topic = msg->get_topic();
-
-		cs.client_name = topic.substr(topic.find("/") + 1, topic.rfind("/") - topic.find("/") - 1);
+		std::string client_name = topic.substr(topic.find("/") + 1, topic.rfind("/") - topic.find("/") - 1);
 
 		output_redraw();
 
-		auto IsClientSame = [cs](const client_statistics &i) {
-			return (cs.client_name == i.client_name);
-		};
-
-		auto pos = std::find_if(client_storage.begin(), client_storage.end(), IsClientSame);
-
-		if (pos; pos != std::end(client_storage)) {
-			pos->messages_num++;
+		if (auto pos = client_storage.find(client_name); pos != client_storage.end()) {
+			pos->second++;
 		}
 
 		else {
-			this->client_storage.push_back(cs);
+			client_storage.insert({client_name, 0});
 		}
 	}
 
@@ -195,8 +182,8 @@ class callback : public virtual mqtt::callback,
 		lines_printed = 4;
 
 		for (auto & element : client_storage) {
-			std::cout << "║"  << std::setw(nameWidth) << std::setfill(sep)  << element.client_name << "║";
-			std::cout << std::setw(numWidth) << std::setfill(sep) << element.messages_num << "║" << std::endl;
+			std::cout << "║"  << std::setw(nameWidth) << std::setfill(sep)  << element.first << "║";
+			std::cout << std::setw(numWidth) << std::setfill(sep) << element.second << "║" << std::endl;
 			std::cout << "╠" << std::setw(nameWidth + 3) << std::setfill('=') << "╬" <<
 		                    std::setw(numWidth + 3) << std::setfill('=') << "╣" << std::endl;
 			lines_printed = lines_printed + 2;
