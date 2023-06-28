@@ -25,6 +25,7 @@
 #include <vector>
 #include <memory>
 #include <iomanip>
+#include <thread>	// For sleep
 #include "mqtt/async_client.h"
 
 const std::string SERVER_ADDRESS("tcp://localhost:1883");
@@ -150,7 +151,7 @@ class callback : public virtual mqtt::callback,
 		std::string topic = msg->get_topic();
 		std::string client_name = topic.substr(topic.find("/") + 1, topic.rfind("/") - topic.find("/") - 1);
 
-		output_redraw();
+		//output_redraw();
 
 		if (auto pos = client_storage.find(client_name); pos != client_storage.end()) {
 			pos->second++;
@@ -161,44 +162,45 @@ class callback : public virtual mqtt::callback,
 		}
 	}
 
+	void delivery_complete(mqtt::delivery_token_ptr token) override {}
+
+public:
+	callback(mqtt::async_client& cli, mqtt::connect_options& connOpts)
+				: nretry_(0), cli_(cli), connOpts_(connOpts), subListener_("Subscription") {}
+
 	void output_redraw() {
 
 		const char sep          = ' ';
 		const int nameWidth     = 20;
 		const int numWidth      = 22;
 
+		std::cout << "lines pronted:" << lines_printed << std::endl;
 		for (int i = 0; i < lines_printed; i++) {
 			std::cout << "\033[1A\033[K";
 		}
 
 		std::cout << "╔" << std::setw(nameWidth + 3) << std::setfill('=') << "╦" <<
-		                    std::setw(numWidth + 3) << std::setfill('=') << "╗" << std::endl;
+							std::setw(numWidth + 3) << std::setfill('=') << "╗" << std::endl;
 		std::cout << "╠" << std::setw(nameWidth + 3) << std::setfill('=') << "╬" <<
-		                    std::setw(numWidth + 3) << std::setfill('=') << "╣" << std::endl;					
+							std::setw(numWidth + 3) << std::setfill('=') << "╣" << std::endl;					
 		std::cout << "║" << std::setw(nameWidth) << std::setfill(sep) << "Client name    ";
 		std::cout << "║" << std::setw(numWidth) << std::setfill(sep) << "Messages      " << "║" << std::endl;
 		std::cout << "╠" << std::setw(nameWidth + 3) << std::setfill('=') << "╬" <<
-		                    std::setw(numWidth + 3) << std::setfill('=') << "╣" << std::endl;
+							std::setw(numWidth + 3) << std::setfill('=') << "╣" << std::endl;
 		lines_printed = 4;
 
 		for (auto & element : client_storage) {
 			std::cout << "║"  << std::setw(nameWidth) << std::setfill(sep)  << element.first << "║";
 			std::cout << std::setw(numWidth) << std::setfill(sep) << element.second << "║" << std::endl;
 			std::cout << "╠" << std::setw(nameWidth + 3) << std::setfill('=') << "╬" <<
-		                    std::setw(numWidth + 3) << std::setfill('=') << "╣" << std::endl;
+							std::setw(numWidth + 3) << std::setfill('=') << "╣" << std::endl;
 			lines_printed = lines_printed + 2;
 		}
 
 		std::cout << "╚" << std::setw(nameWidth + 3) << std::setfill('=') << "╩" <<
-		                    std::setw(numWidth + 3) << std::setfill('=') << "╝" << std::endl;
+							std::setw(numWidth + 3) << std::setfill('=') << "╝" << std::endl;
 		lines_printed++;
 	}
-
-	void delivery_complete(mqtt::delivery_token_ptr token) override {}
-
-public:
-	callback(mqtt::async_client& cli, mqtt::connect_options& connOpts)
-				: nretry_(0), cli_(cli), connOpts_(connOpts), subListener_("Subscription") {}
 };
 
 /////////////////////////////////////////////////////////////////////////////
@@ -234,8 +236,10 @@ int main(int argc, char* argv[])
 
 	// Just block till user tells us to quit.
 
-	while (std::tolower(std::cin.get()) != 'q')
-		;
+	while (std::tolower(std::cin.get()) != 'q') {
+		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+		cb.output_redraw();
+	}
 
 	// Disconnect
 
